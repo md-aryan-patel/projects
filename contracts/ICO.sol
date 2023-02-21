@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./myToken.sol";
 
 error ICOStats(bytes message);
 
@@ -10,6 +9,20 @@ contract ICO {
 
     uint256 counter;
     uint256 decimals = (10**18);
+    address Owner;
+
+    constructor(
+        address _token,
+        address _owner,
+        uint256 _startTime,
+        uint256 _endTime,
+        uint256 _pricePerToken
+    ) {
+        Owner = msg.sender;
+        counter++;
+        require(/*_startTime >= block.timestamp && */ _endTime > _startTime && _pricePerToken != 0, "err:1");
+        providers = tokenProviders(ERC20(_token), _owner, _startTime, _endTime, _pricePerToken);
+    }
 
     struct tokenProviders {
         ERC20 token;
@@ -19,50 +32,39 @@ contract ICO {
         uint256 pricePerToken;
     }
 
-    mapping (uint256 => tokenProviders) public providers;
-    
-    event CreateICO(
-        address tokenAddress, 
-        uint256 icoNumber
-    );
+    tokenProviders providers;
 
-    function createIco(
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _pricePerToken
-    ) public {
-        counter++;        
-        myToken mt = new myToken();
-        require(/*_startTime >= block.timestamp  && */  _endTime > _startTime && _pricePerToken != 0, "err:1");
-        providers[counter] = tokenProviders(ERC20(mt), msg.sender, _startTime, _endTime, _pricePerToken);
-        emit CreateICO(address(ERC20(mt)), counter);
+    function addToken(uint256 _amount) public payable returns(uint256){
+        require(msg.sender == providers.owner);
+        providers.token.transferFrom(msg.sender, address(this), _amount);
+        return providers.token.balanceOf(address(this));
     }
 
-    function addToken(uint256 icoNum,uint256 _amount) public payable returns(uint256){
-        providers[icoNum].token.transferFrom(msg.sender, address(this), _amount);
-        return providers[icoNum].token.balanceOf(address(this));
-    }
-
-    function invest(uint256 icoNum) public payable returns(uint256 tokenRequire){
-        tokenProviders memory current = providers[icoNum]; 
-        
-        // require(block.timestamp >= current.startTime, "ICO not began yet");
-        // require(block.timestamp <= current.endTime, "ICO ended");
-        uint256 currAmount = current.token.balanceOf(address(this));
+    function invest() public payable returns(uint256 tokenRequire){        
+        // require(block.timestamp >= providers.startTime, "ICO not began yet");
+        // require(block.timestamp <= providers.endTime, "ICO ended");
+        uint256 currAmount = providers.token.balanceOf(address(this));
         require(currAmount > 0, "Insufficient Balance");
-        tokenRequire = (msg.value / current.pricePerToken) * decimals;
+        tokenRequire = (msg.value / providers.pricePerToken) * decimals;
         
         if(tokenRequire > currAmount) {
-            uint256 tokenAmounInEth = (providers[icoNum].pricePerToken * currAmount) / decimals;
+            uint256 tokenAmounInEth = (providers.pricePerToken * currAmount) / decimals;
             uint256 transferAmount = msg.value - tokenAmounInEth;
-            payable(current.owner).transfer(transferAmount);
-            current.token.transfer(msg.sender, currAmount);
+            payable(providers.owner).transfer(transferAmount);
+            providers.token.transfer(msg.sender, currAmount);
             payable(msg.sender).transfer(msg.value - transferAmount);
         } else {
-            uint256 transferAmount = (providers[icoNum].pricePerToken * tokenRequire ) / decimals;
+            uint256 transferAmount = (providers.pricePerToken * tokenRequire ) / decimals;
             require(msg.value >= transferAmount, "Err:fee not paid");
-            payable(providers[icoNum].owner).transfer(msg.value);
-            providers[icoNum].token.transfer(msg.sender, tokenRequire);
+            payable(providers.owner).transfer(msg.value);
+            providers.token.transfer(msg.sender, tokenRequire);
         }
+    }
+
+    function withdrawFunds() public {
+        require(msg.sender == providers.owner);
+        require(providers.token.balanceOf(address(this)) > 0);
+        // require(providers.startTime > block.timestamp || providers.endTime < block.timestamp, "ICO has started");
+        providers.token.transfer(msg.sender, providers.token.balanceOf(address(this)));
     }
 }
