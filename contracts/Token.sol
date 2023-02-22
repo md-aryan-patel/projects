@@ -3,13 +3,12 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-error maximumAmount(uint256 _sent, uint256 _spent);
-error capReached(uint256 _cap, uint256 _mintAmount);
-
 contract Tokens is ERC20 {
     uint256 public cap;
     address Owner;
     uint256 taxPercentage;
+    uint256 mintAmount;
+
     
     constructor(uint256 _amount) ERC20("test", "TST") {
         cap = _amount;
@@ -29,25 +28,14 @@ contract Tokens is ERC20 {
         exemptedAccounts[acc] = true;
     }
 
-    function mint() payable public {
-        require(msg.value > 0.1 ether, "Investment amount is low");
-        require(msg.value <= 2 ether, "Investement amount is too high");
+    function mint() public payable  {
+        // require(msg.value > 0.1 ether, "Investment amount is low");
+        // require(msg.value <= 2 ether, "Investement amount is too high"); 
         
-        uint256 mintAmount = (msg.value * 10000000);
+        mintAmount = (msg.value * 10000000);
         
-        if(((totalSupply() + mintAmount) ) > cap) {
-            revert capReached({
-                _cap: cap,
-                _mintAmount: mintAmount
-            });
-        }
-
-        if(spent[msg.sender] + msg.value > 2 ether) {
-            revert maximumAmount({
-                _sent: msg.value,
-                _spent: spent[msg.sender]
-            });
-        }
+        require((totalSupply() + mintAmount) <= cap, "error: 1");
+        require(spent[msg.sender] + msg.value <= 2 ether, "error: 2");
 
         _mint(msg.sender, mintAmount);
         spent[msg.sender] += msg.value;

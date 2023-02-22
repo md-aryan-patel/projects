@@ -10,6 +10,16 @@ contract ICO {
     uint256 counter;
     uint256 decimals = (10**18);
     address Owner;
+    
+    struct tokenProviders {
+        ERC20 token;
+        address owner;
+        uint256 startTime;
+        uint256 endTime;
+        uint256 pricePerToken;
+    }
+
+    tokenProviders providers;
 
     constructor(
         address _token,
@@ -24,18 +34,12 @@ contract ICO {
         providers = tokenProviders(ERC20(_token), _owner, _startTime, _endTime, _pricePerToken);
     }
 
-    struct tokenProviders {
-        ERC20 token;
-        address owner;
-        uint256 startTime;
-        uint256 endTime;
-        uint256 pricePerToken;
+    function getProviders() public view returns(tokenProviders memory) {
+        return providers;
     }
 
-    tokenProviders providers;
-
     function addToken(uint256 _amount) public payable returns(uint256){
-        require(msg.sender == providers.owner);
+        require(msg.sender == providers.owner, "Not Owner");
         providers.token.transferFrom(msg.sender, address(this), _amount);
         return providers.token.balanceOf(address(this));
     }
@@ -50,9 +54,9 @@ contract ICO {
         if(tokenRequire > currAmount) {
             uint256 tokenAmounInEth = (providers.pricePerToken * currAmount) / decimals;
             uint256 transferAmount = msg.value - tokenAmounInEth;
-            payable(providers.owner).transfer(transferAmount);
+            payable(providers.owner).transfer(tokenAmounInEth);
             providers.token.transfer(msg.sender, currAmount);
-            payable(msg.sender).transfer(msg.value - transferAmount);
+            payable(msg.sender).transfer(transferAmount);
         } else {
             uint256 transferAmount = (providers.pricePerToken * tokenRequire ) / decimals;
             require(msg.value >= transferAmount, "Err:fee not paid");

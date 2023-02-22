@@ -1,24 +1,28 @@
 const hre = require("hardhat");
 
-async function main() {
+const main = async () => {
+  const [deployer] = await hre.ethers.getSigners();
+  const myToken = await hre.ethers.getContractFactory("myToken");
+  const mytoken = await myToken.deploy();
+  
+  await mytoken.deployed();
+  console.log("SimpleToken deployed to ", mytoken.address);
 
-  const Token = await hre.ethers.getContractAt("Tokens");
-  const token = await Token.deploy();
-  await token.deployed();
+  const ICO = await hre.ethers.getContractFactory("ICO");
+  const ico = await ICO.deploy(mytoken.address, deployer.address, 1, 2, ethers.utils.parseEther("0.01"));
 
-  const ICO = await hre.ethers.getContractAt("ICO");
-  const ico = await ICO.deploy();
   await ico.deployed();
-
-  console.log(
-    `Lock deployed to: ${token.address}`
-  );
-  console.log(
-    `ICO deployed to: ${ico.address}`
-  );
+  console.log("ICO deployed to ", ico.address);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+const runMain = async () => {
+  try {
+    await main();
+    process.exit(0);
+  } catch (err) {
+    console.log(err);
+    process.err;
+  }
+}
+
+runMain();
