@@ -74,12 +74,11 @@ describe("ICO contract", ()=> {
         });
 
         it("Invest large amount to test revert feature", async () => {
-            const initialBalance = fromWei(await ethers.provider.getBalance(add1.address));
+            const initialBalance = parseInt(fromWei(await ethers.provider.getBalance(add1.address)));
             const tx = await ico.connect(add1).invest({value: toWei(6)});
-            const finalBalance = fromWei(await ethers.provider.getBalance(add1.address));
-            console.log(initialBalance);
-            console.log(finalBalance);
-            console.log(await token.balanceOf(add1.address));
+            const finalBalance = parseInt(fromWei(await ethers.provider.getBalance(add1.address)));
+            expect(await token.balanceOf(ico.address)).to.equal(0);
+            expect(initialBalance - finalBalance).to.equal(5);
         });
     });
 });
