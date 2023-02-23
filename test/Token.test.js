@@ -5,32 +5,30 @@ const toWei = (num) => ethers.utils.parseEther(num.toString());
 const fromWei = (num) => ethers.utils.formatEther(num);
 const cap = toWei(50000);
 
-describe("Token Contract", () => {
-    let contract, deployer;
+describe("myToken Contract", () => {
+    let token, deployer;
+    const mintedAmount = toWei(10000000);
     beforeEach(async () => {
-        const token = await hre.ethers.getContractFactory("Tokens");
+        const Token = await hre.ethers.getContractFactory("myToken");
         [deployer] = await hre.ethers.getSigners();
-        contract = await token.deploy(cap);
-        await contract.deployed();
+        token = await Token.deploy();
+        await token.deployed();
     });
 
-    describe("Testing Token basics", () => {
+    describe("Testing myToken basics", () => {
         it("Should assign a token name", async  () => { 
-            const name = await contract.name();
-            expect(name).to.equal("test");
+            const name = await token.name();
+            expect(name).to.equal("SimpleToken");
         });
 
         it("Should assign a Symbol name", async  () => {
-            const symbol = await contract.symbol();
-            expect(symbol).to.equal("TST");
+            const symbol = await token.symbol();
+            expect(symbol).to.equal("SIMP");
         });
     });
-    // describe("Test minting: ", ()=> {
-    //     it("Verify that tokens are minted correctly when a user invested 1 Ether", async () => {
-    //         const investmentValue = toWei(0.5);
-    //         await contract.mint();
-    //         const balance = await contract.balanceOf(deployer.address);
-    //         console.log(balance);
-    //     });
-    // });
+    describe("Minted tokens ", ()=> {
+        it("Verify that tokens are minted correctly", async () => {
+            expect(await token.balanceOf(deployer.address)).to.equal(mintedAmount);
+        });
+    });
 });

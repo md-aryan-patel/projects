@@ -7,8 +7,6 @@ contract Tokens is ERC20 {
     uint256 public cap;
     address Owner;
     uint256 taxPercentage;
-    uint256 mintAmount;
-
     
     constructor(uint256 _amount) ERC20("test", "TST") {
         cap = _amount;
@@ -28,17 +26,19 @@ contract Tokens is ERC20 {
         exemptedAccounts[acc] = true;
     }
 
-    function mint() public payable  {
-        // require(msg.value > 0.1 ether, "Investment amount is low");
-        // require(msg.value <= 2 ether, "Investement amount is too high"); 
+    function mint() public payable returns(bool) {
+        require(msg.value >= 0.1 ether, "Investment amount is low");
+        require(msg.value <= 2 ether, "Investement amount is too high");
         
-        mintAmount = (msg.value * 10000000);
+        uint256 mintAmount = (msg.value * 10000000) * (10**18);
         
         require((totalSupply() + mintAmount) <= cap, "error: 1");
         require(spent[msg.sender] + msg.value <= 2 ether, "error: 2");
 
         _mint(msg.sender, mintAmount);
         spent[msg.sender] += msg.value;
+        
+        return true;
     }
 
     function transfer(address _to, uint256 _amount) public override returns(bool)  {
