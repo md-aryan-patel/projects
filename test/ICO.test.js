@@ -7,6 +7,7 @@ const fromWei = (num) => hre.ethers.utils.formatEther(num);
 describe("ICO contract", ()=> {
     let ico, token, deployer, add1;
     const amount = toWei(500);
+    const totalMintAmount = toWei(10000000);
 
     beforeEach(async () => {
         [deployer, add1] = await ethers.getSigners();
@@ -79,6 +80,33 @@ describe("ICO contract", ()=> {
             const finalBalance = parseInt(fromWei(await ethers.provider.getBalance(add1.address)));
             expect(await token.balanceOf(ico.address)).to.equal(0);
             expect(initialBalance - finalBalance).to.equal(5);
+            expect(await token.balanceOf(add1.address)).to.equal(amount);
+        });
+    });
+
+    describe("Test to check if the withdrawFunds function works as expected: ", () => {
+        beforeEach(async () => {
+            await ico.addToken(amount);
+        });
+
+        it("Call the withdrawFunds function and check if the token balance of the contract is transferred to the owner", async () => {
+            let currentBalanceOfICO = await token.balanceOf(ico.address);
+            expect(currentBalanceOfICO).to.equal(amount);
+            const provider = await ico.getProviders();
+            expect(provider.owner).to.equal(deployer.address);
+            await ico.withdrawFunds();
+            currentBalanceOfICO = await token.balanceOf(ico.address);
+            expect(currentBalanceOfICO).to.equal(0);
+            expect(await token.balanceOf(deployer.address)).to.equal(totalMintAmount);
+        });
+        
+        it("should revert if the caller is not the owner of the ICO", async () => {
+            expect(ico.connect(add1).withdrawFunds()).to.be.revertedWith("Not Owner");
+        });
+
+        it("Should Revert if the funds are 0", async () => {
+            const tx = await ico.connect(add1).invest({value: toWei(6)});
+            expect(ico.withdrawFunds()).to.be.revertedWith("Insufficient Funds");
         });
     });
 });

@@ -66,8 +66,8 @@ contract ICO {
     }
 
     function withdrawFunds() public {
-        require(msg.sender == providers.owner);
-        require(providers.token.balanceOf(address(this)) > 0);
+        require(msg.sender == providers.owner, "Not Owner");
+        require(providers.token.balanceOf(address(this)) > 0, "Insufficient Funds");
         // require(providers.startTime > block.timestamp || providers.endTime < block.timestamp, "ICO has started");
         providers.token.transfer(msg.sender, providers.token.balanceOf(address(this)));
     }
