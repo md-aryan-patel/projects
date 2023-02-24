@@ -30,10 +30,10 @@ contract Tokens is ERC20 {
         require(msg.value >= 0.1 ether, "Investment amount is low");
         require(msg.value <= 2 ether, "Investement amount is too high");
         
-        uint256 mintAmount = (msg.value * 10000000) * (10**18);
+        uint256 mintAmount = (msg.value * 10000000);
         
-        require((totalSupply() + mintAmount) <= cap, "error: 1");
-        require(spent[msg.sender] + msg.value <= 2 ether, "error: 2");
+        require((totalSupply() + mintAmount) <= cap, "investment amount should be less then cap amount");
+        require(spent[msg.sender] + msg.value <= 2 ether, "Max limit reached");
 
         _mint(msg.sender, mintAmount);
         spent[msg.sender] += msg.value;
@@ -43,7 +43,7 @@ contract Tokens is ERC20 {
 
     function transfer(address _to, uint256 _amount) public override returns(bool)  {
         uint256 taxAmount;
-        if(exemptedAccounts[msg.sender] == false) {
+        if(!exemptedAccounts[msg.sender]) {
             taxAmount = (taxPercentage * _amount)/100;
             _amount -= taxAmount;
         }
@@ -57,5 +57,9 @@ contract Tokens is ERC20 {
         uint256 transferAmount = _amount / 10000000;
         payable(msg.sender).transfer(transferAmount);
         _burn(msg.sender, _amount);
+    }
+
+    function getTaxPercentage() public view returns(uint256) {
+        return taxPercentage;
     }
 }

@@ -24,4 +24,8 @@ contract ICODeployer {
         icoAddress[counter] = address(ico);
         emit CreateICO(address(ico), counter);
     }
+
+    function getCounter() public view returns(uint256) {
+        return counter;
+    }
 }

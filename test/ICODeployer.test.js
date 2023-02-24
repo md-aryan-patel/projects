@@ -23,7 +23,7 @@ describe("ICODeployer contract", () => {
         await icoDeployer.deployed();
     });
 
-    describe("ICO Created Properly with non zero address", () => {
+    describe("ICO Created Properly with proper Owner of the ICO", () => {
         let events;
         beforeEach(async () => {
             const tx = await icoDeployer.deploy_ico(token.address, startTime, endTime, pricePerToken);
@@ -41,6 +41,7 @@ describe("ICODeployer contract", () => {
             const ico = await ethers.getContractAt("ICO", address);
             await ico.deployed();
             const provider = await ico.getProviders();
+            expect(await icoDeployer.getCounter()).to.equal(1);
             expect(provider.owner).to.equal(deployer.address);
         });
     });
