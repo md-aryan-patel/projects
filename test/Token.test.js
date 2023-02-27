@@ -89,6 +89,28 @@ describe("Token contract: ", () => {
     });
 
     describe("Burn tokens", () => {
-        
-    })
+        let tx, receipt, events;
+        const investAmount = toWei(1);
+
+        beforeEach(async () => {
+            await token.connect(account_1).mint({value: investAmount});
+        });
+
+        it("Should Emit a transfer Event while burning the tokens", async () => {
+            tx = await token.connect(account_1).burn(toWei(0.1));
+            receipt = await tx.wait();
+            events = receipt.events;
+            expect(events.length).equal(1);
+            expect(events[0].event).to.equal("Transfer");
+            expect(events[0].args.to).to.equal(ethers.constants.AddressZero);
+        });
+
+        it("Should Transfer the ether according to the amount of token burned", async ()=> {
+            const balanceBefore = (await ethers.provider.getBalance(account_1.address));
+            tx = await token.connect(account_1).burn(toWei(10000000));
+            let balanceAfter = (await ethers.provider.getBalance(account_1.address));
+            balanceAfter =  (parseInt(fromWei(balanceAfter))) - (parseInt(fromWei(balanceBefore)))
+            expect(balanceAfter).to.equal(1);
+        });
+    });
 });
