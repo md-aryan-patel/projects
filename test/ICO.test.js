@@ -69,8 +69,8 @@ describe("ICO contract", ()=> {
         });
         
         it("Invest small amount of ether to check the invest", async () => {
-            const beforeBalance = await token.balanceOf(ico.address); 
-            const requireToken = await ico.connect(add1).invest({value: toWei(0.1)});
+            await token.balanceOf(ico.address); 
+            await ico.connect(add1).invest({value: toWei(0.1)});
             expect(await token.balanceOf(ico.address)).to.equal(toWei(490));
         });
 

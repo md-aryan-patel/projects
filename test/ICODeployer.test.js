@@ -2,11 +2,9 @@ const {expect} = require("chai");
 const {ethers} = require("hardhat");
 const hre = require("hardhat");
 const toWei = (num) => hre.ethers.utils.parseEther(num.toString());
-const fromWei = (num) => hre.ethers.utils.formatEther(num);
 
 describe("ICODeployer contract", () => {
     let token, icoDeployer, deployer;
-    const amount = toWei(500);
     const startTime = 1;
     const endTime = 2;
     const pricePerToken = toWei(0.01);
