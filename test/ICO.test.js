@@ -32,7 +32,7 @@ describe("ICO contract", ()=> {
 
     describe("Test to check if the contract is deployed successfully: ", () => {
         it("check Deployed ICO contract has a valid address", async () => {
-            expect(ico.address).not.equal("0x0");
+            expect(ico.address).not.equal(ethers.constants.AddressZero);
         });
 
         it("check Deployed ICO contract with valid parameters", async () => {
