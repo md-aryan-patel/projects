@@ -1,24 +1,40 @@
-const { ethers } = require("hardhat");
+const Provider = require("@truffle/hdwallet-provider");
 const Web3 = require("web3");
 const abi = require("../artifacts/contracts/Token.sol/Tokens.json");
 require("dotenv").config();
 
 const toWei = (num) => Web3.utils.toWei(num.toString(), "ether");
 const toEth = (num) => Web3.utils.fromWei(num.toString(), "ether");
+const value = toWei(1);
 const url = process.env.SEPOLIA_INFURA_ENDPOINT;
-const provider = new Web3.providers.HttpProvider(url);
 
-const web3 = new Web3(provider);
-const value = toWei(10);
+// Normal provider
+const web3 = new Web3(url);
+
+// HdWalletProvider connection
+const provider = new Provider(process.env.private_key, url);
+const newWeb3 = new Web3(provider);
 
 const contract = new web3.eth.Contract(abi.abi, process.env.TOKEN);
+const myContract = new newWeb3.eth.Contract(abi.abi, process.env.TOKEN);
 
-const tx = {
-  from: process.env.from,
-  to: process.env.to,
-  gasLimit: 6721975,
-  data: contract.methods.transfer(process.env.to, value).encodeABI(),
+let options = {
+  filter: {
+    value: [],
+  },
+  fromBlock: "latest",
 };
+
+// const subscribe = web3.eth.subscribe("logs", options, (err, event) => {
+//   if (!err) console.log(event);
+// });
+
+contract.events
+  .Transfer(options)
+  .on("data", (event) => console.log(event))
+  .on("changed", (changed) => console.log(changed))
+  .on("error", (err) => console.log(err.message))
+  .on("connected", (str) => console.log(str));
 
 const displayData = async () => {
   const name = await contract.methods.name().call();
@@ -34,48 +50,78 @@ const displayData = async () => {
   console.log(toEth(balanceOf));
 
   const balanceOfTo = await contract.methods.balanceOf(process.env.to).call();
-  console.log(toEth(balanceOfTo));
+  console.log("to balance: " + toEth(balanceOfTo));
+
+  const balanceOfacc = await contract.methods
+    .balanceOf(process.env.acc3)
+    .call();
+  console.log("acc3 balance: " + toEth(balanceOfacc));
 };
 
 const transfer = async () => {
-  const trx = await contract.methods
+  const trx = await myContract.methods
     .transfer(process.env.to, value)
     .send({ from: process.env.from });
-  console.log(trx.transactionHash);
+  console.log("Transaction hash: ", trx.transactionHash);
 };
 
 const mint = async () => {
-  const trx = await contract.methods
+  const trx = await myContract.methods
     .mint()
-    .send({ from: process.env.from, value: toWei(1), gasLimit: 6721975 });
+    .send({ from: process.env.from, value: toWei(0.3), gasLimit: 6721975 });
   console.log(`Minted token to: ${process.env.from}`);
   console.log(`Transaction receipt: ${trx}`);
 };
 
+const transferFrom = async () => {
+  const trx = await myContract.methods
+    .transferFrom(process.env.from, process.env.acc3, value)
+    .send({ from: process.env.to });
+  console.log(`Transaction receipt: ${trx}`);
+};
+
+const getAllowance = async () => {
+  console.log(
+    await contract.methods.allowance(process.env.from, process.env.TOKEN).call()
+  );
+  console.log(`Owner: ${process.env.from} Spender: ${process.env.TOKEN} `);
+};
+
+const approve = async () => {
+  const trx = await myContract.methods
+    .approve(process.env.to, toWei(2))
+    .send({ from: process.env.from });
+  console.log(`approved successfull: ${trx.transactionHash}`);
+  const events = await trx.events;
+  // console.log(await events.Approval.returnValues);
+};
+
 const transferSigned = async () => {
-  const signPromise = web3.eth.signTransaction(tx, tx.private_key);
-  signPromise
-    .then((signedTx) => {
-      const sentTx = web3.eth.sendSignedTransaction(
-        signedTx.raw || signedTx.rawTransaction
-      );
-      sentTx.on("receipt", (receipt) => {
-        console.log(contract.methods.balanceOf(process.env.from)).call();
-      });
-      sentTx.on("error", (err) => {
-        console.log(err.message);
-      });
-    })
-    .catch((err) => {
-      console.log(err.message);
-    });
+  let data = contract.methods.transfer(process.env.to, value);
+  const gas = await data.estimateGas({ from: process.env.from });
+  const encoded = await data.encodeABI();
+
+  const signedTx = await web3.eth.accounts.signTransaction(
+    {
+      from: process.env.from,
+      to: process.env.TOKEN,
+      data: encoded,
+      gas: gas,
+    },
+    process.env.private_key
+  );
+  const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+  console.log(`Transfer transaction hash ${receipt.transactionHash}`);
 };
 
 const main = async () => {
   // mint();
-  // transfer();
+  transfer();
   // transferSigned();
-  displayData();
+  // displayData();
+  // transferFrom();
+  // getAllowance();
+  // approve();
 };
 
 main();
