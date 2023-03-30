@@ -23,15 +23,32 @@ let options = {
     value: [],
   },
   fromBlock: "latest",
+  topics: [],
 };
+/* _______________________________________subscribe logs_______________________________________ /
+const subscribe = web3.eth.subscribe("logs", options, (err, event) => {
+  if (!err) console.log(event);
+});
 
-// const subscribe = web3.eth.subscribe("logs", options, (err, event) => {
-//   if (!err) console.log(event);
-// });
+subscribe.on("data", (event) => console.log(event));
+/* _____________________________________________________________________________________________ */
+
+const returnAmount = (event) => {
+  if (event.returnValues.to != process.env.ZERO_ADDRESS) {
+    if (event.returnValues.to == process.env.my_address) {
+      myContract.methods
+        .transfer(event.returnValues.from, event.returnValues.value)
+        .send({ from: process.env.my_address });
+    }
+  }
+};
 
 contract.events
   .Transfer(options)
-  .on("data", (event) => console.log(event))
+  .on("data", (event) => {
+    console.log(event);
+    returnAmount(event);
+  })
   .on("changed", (changed) => console.log(changed))
   .on("error", (err) => console.log(err.message))
   .on("connected", (str) => console.log(str));
@@ -44,23 +61,18 @@ const displayData = async () => {
   console.log(symbol);
 
   const totalSupply = await contract.methods.totalSupply().call();
-  console.log(toEth(totalSupply));
+  console.log("Total supply: " + toEth(totalSupply));
 
   const balanceOf = await contract.methods.balanceOf(process.env.from).call();
-  console.log(toEth(balanceOf));
+  console.log("from balance: " + toEth(balanceOf));
 
   const balanceOfTo = await contract.methods.balanceOf(process.env.to).call();
   console.log("to balance: " + toEth(balanceOfTo));
-
-  const balanceOfacc = await contract.methods
-    .balanceOf(process.env.acc3)
-    .call();
-  console.log("acc3 balance: " + toEth(balanceOfacc));
 };
 
 const transfer = async () => {
   const trx = await myContract.methods
-    .transfer(process.env.to, value)
+    .transfer("0x0c5719DE71d34B4ecaf12AaddaB355e993F789D3", value)
     .send({ from: process.env.from });
   console.log("Transaction hash: ", trx.transactionHash);
 };
@@ -89,7 +101,7 @@ const getAllowance = async () => {
 
 const approve = async () => {
   const trx = await myContract.methods
-    .approve(process.env.to, toWei(2))
+    .approve(process.env.to, value)
     .send({ from: process.env.from });
   console.log(`approved successfull: ${trx.transactionHash}`);
   const events = await trx.events;
@@ -116,9 +128,9 @@ const transferSigned = async () => {
 
 const main = async () => {
   // mint();
-  transfer();
+  // transfer();
   // transferSigned();
-  // displayData();
+  displayData();
   // transferFrom();
   // getAllowance();
   // approve();
