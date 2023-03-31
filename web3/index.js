@@ -1,6 +1,7 @@
 const Provider = require("@truffle/hdwallet-provider");
 const Web3 = require("web3");
 const abi = require("../artifacts/contracts/Token.sol/Tokens.json");
+const signerAbi = require("../artifacts/contracts/verifySignature.sol/verifySignature.json");
 require("dotenv").config();
 
 const toWei = (num) => Web3.utils.toWei(num.toString(), "ether");
@@ -126,11 +127,45 @@ const transferSigned = async () => {
   console.log(`Transfer transaction hash ${receipt.transactionHash}`);
 };
 
+const signMessage = async (_message) => {
+  const cryptedMessage = await web3.utils.sha3(_message);
+  console.log("Your message: " + cryptedMessage);
+
+  const res = await newWeb3.eth.sign(
+    cryptedMessage,
+    process.env.from,
+    async (err, result) => {
+      if (err) console.log(err.message);
+      const r = result.slice(0, 66);
+      const s = "0x" + result.slice(66, 130);
+      const v = parseInt(result.slice(130, 132), 16);
+      console.log("r: " + r);
+      console.log("s: " + s);
+      console.log("v: " + v);
+      verifySignature(cryptedMessage, v, r, s);
+    }
+  );
+
+  return res;
+};
+
+const verifySignature = async (_cryptedMessage, _v, _r, _s) => {
+  const signerCOntract = new newWeb3.eth.Contract(
+    signerAbi.abi,
+    process.env.signature_contract_address
+  );
+  const adr = await signerCOntract.methods
+    .verify(_cryptedMessage, parseInt(_v), _r, _s)
+    .call();
+  console.log("Signed by: " + adr);
+};
+
 const main = async () => {
+  signMessage("approving to disapprove this message");
   // mint();
   // transfer();
   // transferSigned();
-  displayData();
+  // displayData();
   // transferFrom();
   // getAllowance();
   // approve();
