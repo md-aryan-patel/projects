@@ -106,13 +106,15 @@ const signMessage = async (_message) => {
   console.log("Wallet address: " + wallet.address);
 };
 
-const main = () => {
-  signMessage("approving to disapprove this message");
+const main = async () => {
+  // signMessage("approving to disapprove this message");
   // displayData();
   // approve();
   // getAllowance();
   // transfer();
   // mint();
+
+  console.log(await wallet.getTransactionCount());
 };
 
 main();
