@@ -19,20 +19,20 @@ const main = async () => {
     deployer.address,
     1,
     2,
-    ethers.utils.parseEther("0.01")
+    toWei(0.01)
   );
 
   await ico.deployed();
   console.log("ICO deployed to ", ico.address);
   console.log(`Token deployed to: ${token.address}`);
 
-  // const VerifySignature = await hre.ethers.getContractFactory(
-  //   "verifySignature"
-  // );
-  // const verifySignature = await VerifySignature.deploy();
-  // await verifySignature.deployed();
+  const VerifySignature = await hre.ethers.getContractFactory(
+    "verifySignature"
+  );
+  const verifySignature = await VerifySignature.deploy();
+  await verifySignature.deployed();
 
-  // console.log(`contract deployed to address: ${verifySignature.address}`);
+  console.log(`contract deployed to address: ${verifySignature.address}`);
 };
 
 const runMain = async () => {

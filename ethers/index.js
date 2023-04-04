@@ -1,6 +1,5 @@
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 const abi = require("../artifacts/contracts/Token.sol/Tokens.json");
-const signerAbi = require("../artifacts/contracts/verifySignature.sol/verifySignature.json");
 require("dotenv").config();
 
 const toEth = (num) => ethers.utils.formatEther(num);
@@ -46,75 +45,97 @@ contract.on("Transfer", (from, to, value) => {
   csl(transferEvent);
 });
 
-const approve = async () => {
-  const trx = await contract
-    .connect(wallet)
-    .approve(process.env.to, toWei(100));
+const approve = async (_to, _value) => {
+  const trx = await contract.connect(wallet).approve(_to, _value);
   csl(trx);
 };
 
-const getAllowance = async () => {
-  csl(
-    toEth(
-      await contract.connect(wallet).allowance(process.env.from, process.env.to)
-    )
-  );
+const getAllowance = async (_to) => {
+  csl(toEth(await contract.connect(wallet).allowance(process.env.from, _to)));
 };
 
-const mint = async () => {
-  const trx = await contract
-    .connect(wallet)
-    .mint({ value: toWei(0.5), gasLimit: 6721975 });
+const mint = async (_value) => {
+  const trx = await contract.connect(wallet).mint({ value: _value });
   csl(trx);
 };
 
-const transferFrom = async () => {
+const transferFrom = async (_from, _to, _value) => {
   const trx = await contract
     .connect(wallet)
-    .mint(process.env.from, process.env.acc3, { from: process.env.to });
+    .transferFrom(process.env.from, process.env.acc3, _value, {
+      from: process.env.to,
+    });
   csl(trx.hash);
 };
 
-const transfer = async () => {
-  const trx = await contract.connect(wallet).transfer(process.env.to, value);
+const transfer = async (_to, _value) => {
+  const trx = await contract.connect(wallet).transfer(_to, _value);
   // creceiptonst  = await trx.wait();
   // const events = receipt.events;
-  csl(`Transaction hash: ${trx.hash}`);
+  csl(trx);
 };
 
 const signMessage = async (_message) => {
   const message = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(_message));
 
   const flatSign = await wallet.signMessage(_message);
-  console.log("Your message signature: " + flatSign);
+  csl("Your message signature: " + flatSign);
 
   const sig = ethers.utils.splitSignature(flatSign);
 
-  const verificationContract = new ethers.Contract(
-    process.env.signature_contract_address,
-    signerAbi.abi,
-    provider
-  );
+  const address = ethers.utils.recoverAddress(message, flatSign);
+  csl("Signing address: " + address);
+};
 
-  const address = await verificationContract.verify(
-    message,
-    sig.v,
-    sig.r,
-    sig.s
+const testFunctions = async () => {
+  console.log(await provider.listAccounts());
+  console.log(
+    "Balance of my_account: " + (await provider.getBalance(process.env.from))
   );
-  console.log("Signing address: " + address);
-  console.log("Wallet address: " + wallet.address);
+  console.log(network);
+  console.log(provider);
+  console.log(await provider.getNetwork());
+  console.log(await provider.getNetwork());
+  console.log(await provider.getGasPrice());
+  console.log(await provider.getBlockNumber());
+
+  console.log(contract.address);
+
+  const encode = contract.interface._encodeParams(
+    ["uint", "string"],
+    [123, "Hello"]
+  );
+  const decode = contract.interface._decodeParams(["uint", "string"], encode);
+  const topic = contract.interface.getEventTopic("Transfer");
+  csl(topic);
+};
+
+const signedTransfer = async (_from, _to, _value) => {
+  const trx = {
+    from: _from,
+    to: _to,
+    data: contract.interface.encodeFunctionData("transfer", [
+      process.env.to,
+      _value,
+    ]),
+  };
+
+  const newWallet = new ethers.Wallet(process.env.private_key);
+  const signer = newWallet.connect(provider);
+  const result = await signer.sendTransaction(trx);
+  csl(result);
 };
 
 const main = async () => {
-  // signMessage("approving to disapprove this message");
+  signMessage("approving to disapprove this message");
   // displayData();
-  // approve();
-  // getAllowance();
-  // transfer();
-  // mint();
-
-  console.log(await wallet.getTransactionCount());
+  // signedTransfer(process.env.from, process.env.to, value);
+  // approve(process.env.to, toWei(100));
+  // getAllowance(process.env.to);
+  // transfer(process.env.to, value);
+  // mint(toWei(0.5));
+  // testFunctions();
+  // console.csl(await wallet.getTransactionCount());
 };
 
 main();
